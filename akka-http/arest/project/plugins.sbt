@@ -1,4 +1,3 @@
-
 resolvers += "sbt-idea-repo" at "http://mpeltonen.github.com/maven/"
 
 addSbtPlugin("io.spray" % "sbt-revolver" % "0.7.1")

@@ -7,7 +7,7 @@ import akka.actor.Actor
 
  */
 
-case class USER_ID()
+case class USER_ID(userId:String)
 case class ID(id:Int)
 case class USER_JOBS()
 case class UserJob(userName:String,numberOfReq:Int)
@@ -15,7 +15,7 @@ case class UserJob(userName:String,numberOfReq:Int)
 class MyActor extends Actor{
   var id:Int =0;
   def receive = {
-    case USER_ID => id=id+1
+    case USER_ID(userId:String) => id=id+1
                   sender ! ID(id)
     case USER_JOBS => 
                    val x:List[UserJob]=List(UserJob("tunu",1),UserJob("munu",2))

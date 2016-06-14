@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.ContentTypes
-import akka.http.scaladsl.server.Directives._
 import akka.actor.Props
 import akka.pattern.ask
 import akka.dispatch.OnSuccess
@@ -20,8 +19,13 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.RouteResult.Complete
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.Directives.parameter
+import akka.http.scaladsl.server.Directives.path
+import akka.http.scaladsl.server.Directives.authenticateBasic
+import akka.http.scaladsl.server.directives.Credentials
+import akka.http.scaladsl.server.Directives._
+
 /**
  * @author sunil
  */
@@ -40,24 +44,41 @@ trait MyService {
 
   implicit val bidsFormat = jsonFormat1(ID)
 
-
-  val route:Route =
-    path("id") {
-    println("in id path")
-      get {
-       println("get")
-        complete {
-          println("complete")
-           (myActor ? USER_ID).mapTo[ID]
-      }
-      }
-   }~
-   path("userjob"){
-      get {
-        complete {
-           (myActor ? USER_JOBS).mapTo[List[UserJob]]
-      }
-     }
+  def myUserPassAuthenticator(credentials: Credentials): Option[String] =
+    credentials match {
+      /* case p @ Credentials.Provided(id) => 
+                                     println("ghot userId"+id)
+                                     if(p.verify("mands@123")) Some(id)
+                                     else None*/
+      case p @ Credentials.Provided(id) if p.verify("test@123") => Some(id)
+      case _ => None
     }
+
+  val route: Route =
+    path("id") {
+      println("in id path")
+      get {
+        authenticateBasic("wrong password", myUserPassAuthenticator(_)) { u =>
+          parameter("userId".as[String]) { (userId) =>
+            println("get")
+            complete {
+              println("complete")
+              (myActor ? USER_ID(userId)).mapTo[ID]
+            }
+          }
+        }
+      }
+    } ~
+      path("userJob") {
+        get {
+          authenticateBasic("wrong password", myUserPassAuthenticator(_)) { u =>
+            complete {
+              (myActor ? USER_JOBS).mapTo[List[UserJob]]
+            }
+          }
+        }
+      }
+  
+  
 }
 
